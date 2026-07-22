@@ -1,6 +1,7 @@
 # Shinobilson Bot
 
 [![CI](https://github.com/h4rdrew/shinobilson-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/h4rdrew/shinobilson-bot/actions/workflows/ci.yml)
+[![Release](https://github.com/h4rdrew/shinobilson-bot/actions/workflows/release.yml/badge.svg)](https://github.com/h4rdrew/shinobilson-bot/actions/workflows/release.yml)
 
 Bot de música para Discord com reprodução exclusiva do YouTube e comandos slash:
 
@@ -85,6 +86,37 @@ Quando usar cookies no container, mantenha o arquivo em `secrets/youtube-cookies
 
 ```env
 YOUTUBE_COOKIES_FILE=/app/secrets/youtube-cookies.txt
+```
+
+## Criando uma release
+
+O workflow de release é acionado por tags no formato `vX.Y.Z`. A versão da tag precisa ser igual ao campo `version` do `package.json`.
+
+Para criar a primeira release:
+
+```bash
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
+Após as validações, o GitHub cria as notas da release e publica a imagem com tags semânticas no GitHub Container Registry:
+
+```text
+ghcr.io/h4rdrew/shinobilson-bot:1.0.0
+ghcr.io/h4rdrew/shinobilson-bot:1.0
+ghcr.io/h4rdrew/shinobilson-bot:1
+ghcr.io/h4rdrew/shinobilson-bot:latest
+```
+
+Para uma nova versão, atualize primeiro o `package.json`. Por exemplo:
+
+```bash
+npm version patch --no-git-tag-version
+git add package.json package-lock.json
+git commit -m "chore: release v1.0.1"
+git push origin main
+git tag -a v1.0.1 -m "Release v1.0.1"
+git push origin v1.0.1
 ```
 
 ## Observações sobre o YouTube
