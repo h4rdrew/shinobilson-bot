@@ -86,7 +86,7 @@ export async function searchYouTube(
       dumpSingleJson: true,
       skipDownload: true,
       flatPlaylist: true,
-      noPlaylist: directUrl,
+      ...(directUrl ? { noPlaylist: true } : {}),
     })) as YtDlpResult;
 
     const entries = output.entries ?? [output];
