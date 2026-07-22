@@ -1,5 +1,7 @@
 node_modules/
 dist/
 .env
+secrets/
+*.cookies.txt
 *.log
 .DS_Store
