@@ -12,13 +12,118 @@ Bot de música para Discord com reprodução exclusiva do YouTube e comandos sla
 - `/skip` — pula a música atual;
 - `/stop` — limpa a fila e desconecta o bot.
 
-## Requisitos
+## Início rápido com Docker (sem código-fonte)
+
+Este é o caminho recomendado para quem deseja apenas executar o bot. Não é necessário instalar VS Code, Node.js, Python ou FFmpeg: eles já estão incluídos na imagem.
+
+### 1. Requisitos
+
+- Windows 11 com WSL 2;
+- Docker Desktop com integração WSL 2 ou Docker Engine dentro do WSL;
+- uma aplicação com bot criada no [Discord Developer Portal](https://discord.com/developers/applications);
+- o bot convidado para o servidor com os escopos `bot` e `applications.commands` e as permissões `View Channels`, `Connect`, `Speak` e `Send Messages`.
+
+### 2. Criar a pasta da aplicação
+
+Abra o terminal do WSL e execute:
+
+```bash
+mkdir -p ~/shinobilson/logs ~/shinobilson/secrets
+cd ~/shinobilson
+```
+
+### 3. Criar o arquivo `.env`
+
+Crie o arquivo:
+
+```bash
+nano .env
+```
+
+Preencha com suas credenciais:
+
+```env
+DISCORD_TOKEN=token_do_seu_bot
+CLIENT_ID=application_id_do_bot
+GUILD_ID=id_do_seu_servidor
+YOUTUBE_COOKIES_FILE=
+```
+
+Salve no `nano` com `Ctrl+O`, pressione `Enter` e saia com `Ctrl+X`. Nunca compartilhe ou publique esse arquivo.
+
+### 4. Baixar a imagem
+
+```bash
+docker pull ghcr.io/h4rdrew/shinobilson-bot:latest
+```
+
+### 5. Registrar os comandos slash
+
+Execute uma vez na primeira instalação e novamente somente quando a estrutura dos comandos mudar:
+
+```bash
+docker run --rm \
+  --env-file .env \
+  --entrypoint node \
+  ghcr.io/h4rdrew/shinobilson-bot:latest \
+  dist/register-commands.js
+```
+
+### 6. Iniciar o bot
+
+```bash
+docker run -d \
+  --name shinobilson-bot \
+  --restart unless-stopped \
+  --init \
+  --env-file .env \
+  --security-opt no-new-privileges \
+  --cap-drop ALL \
+  -v "$(pwd)/logs:/app/logs" \
+  -v "$(pwd)/secrets:/app/secrets:ro" \
+  ghcr.io/h4rdrew/shinobilson-bot:latest
+```
+
+### 7. Confirmar a inicialização
+
+```bash
+docker ps
+docker logs -f shinobilson-bot
+```
+
+A inicialização foi concluída quando aparecer uma mensagem semelhante a:
+
+```text
+INFO discord.client.ready
+```
+
+Pressione `Ctrl+C` para sair da visualização dos logs; isso não encerra o container. Depois, entre em um canal de voz no Discord e teste `/play`.
+
+### Comandos de administração
+
+```bash
+# Parar
+docker stop shinobilson-bot
+
+# Iniciar novamente
+docker start shinobilson-bot
+
+# Reiniciar
+docker restart shinobilson-bot
+
+# Remover o container
+docker rm -f shinobilson-bot
+```
+
+## Desenvolvimento local pelo código-fonte
+
+### Requisitos
 
 - Node.js 22.12 ou mais recente;
 - Python 3.9 ou mais recente disponível como `python3` durante a instalação do `youtube-dl-exec`;
 - permissões `View Channels`, `Connect` e `Speak` para o bot no canal de voz.
 
-## Configuração
+### Configuração
 
 1. Crie uma aplicação no [Discord Developer Portal](https://discord.com/developers/applications) e adicione um bot.
 2. Em **OAuth2 > URL Generator**, marque `bot` e `applications.commands`. Nas permissões do bot, marque `View Channels`, `Connect`, `Speak` e `Send Messages`, e use a URL gerada para convidá-lo.
