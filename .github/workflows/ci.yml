@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: TypeScript e Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v6
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificar TypeScript
+        run: npm run check
+
+      - name: Compilar aplicação
+        run: npm run build
+
+      - name: Construir imagem Docker
+        run: docker build --tag shinobilson-bot:ci .
+
+      - name: Validar FFmpeg e yt-dlp da imagem
+        run: |
+          docker run --rm --entrypoint node shinobilson-bot:ci -e "
+            const { execFileSync } = require('node:child_process');
+            const ffmpeg = require('ffmpeg-static');
+            const ytDlp = './node_modules/youtube-dl-exec/bin/yt-dlp';
+            execFileSync(ffmpeg, ['-version'], { stdio: 'inherit' });
+            execFileSync(ytDlp, ['--version'], { stdio: 'inherit' });
+          "
