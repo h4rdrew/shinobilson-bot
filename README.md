@@ -45,6 +45,44 @@ Para acompanhar o arquivo em tempo real no PowerShell:
 Get-Content .\logs\bot.log -Wait
 ```
 
+## Docker com WSL 2
+
+Com o Docker configurado no WSL 2, abra o PowerShell na raiz do projeto e execute:
+
+```powershell
+.\docker-up.ps1
+```
+
+O script valida o `.env`, constrói uma imagem Linux, registra os comandos slash, cria o container e inicia o bot em segundo plano. Os logs ficam persistidos na pasta `logs` e a pasta opcional `secrets` é montada como somente leitura.
+
+Também é possível executar diretamente dentro do WSL:
+
+```bash
+bash ./scripts/docker-up.sh
+```
+
+Comandos úteis, executados na raiz do projeto dentro do WSL:
+
+```bash
+# Acompanhar os logs
+docker compose logs -f bot
+
+# Reiniciar
+docker compose restart bot
+
+# Parar e remover o container
+docker compose down
+
+# Reconstruir depois de alterar o código
+bash ./scripts/docker-up.sh
+```
+
+Quando usar cookies no container, mantenha o arquivo em `secrets/youtube-cookies.txt` e configure:
+
+```env
+YOUTUBE_COOKIES_FILE=/app/secrets/youtube-cookies.txt
+```
+
 ## Observações sobre o YouTube
 
 O projeto usa `yt-dlp`, instalado automaticamente pelo `youtube-dl-exec`. Como o YouTube altera seus mecanismos com frequência, mantenha as dependências atualizadas. Em servidores onde o YouTube exige login, exporte seus próprios cookies no formato Netscape, proteja o arquivo e indique seu caminho em `YOUTUBE_COOKIES_FILE`. Nunca versione tokens ou cookies.

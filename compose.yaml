@@ -1,0 +1,28 @@
+name: shinobilson
+
+services:
+  bot:
+    container_name: shinobilson-bot
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      TZ: America/Sao_Paulo
+    volumes:
+      - type: bind
+        source: ./logs
+        target: /app/logs
+      - type: bind
+        source: ./secrets
+        target: /app/secrets
+        read_only: true
+    restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    stop_grace_period: 15s
