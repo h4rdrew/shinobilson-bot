@@ -13,6 +13,7 @@ import { config } from "./config.js";
 import { formatDuration, truncate } from "./format.js";
 import { QueueManager } from "./music-queue.js";
 import { searchYouTube, type Track } from "./youtube.js";
+import { logger } from "./logger.js";
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
@@ -66,7 +67,11 @@ async function addTrack(interaction: ChatInputCommandInteraction, track: Track):
         : `✅ Preparando **${track.title}**…`,
     );
   } catch (error) {
-    console.error(error);
+    logger.error("discord.voice.join.failed", error, {
+      guildId: interaction.guildId,
+      channelId: voiceChannel.id,
+      trackId: track.id,
+    });
     if (!queue.current) queue.destroy();
     await interaction.editReply("Não consegui entrar no canal de voz. Confira minhas permissões.");
   }
@@ -78,9 +83,16 @@ async function handlePlay(interaction: ChatInputCommandInteraction): Promise<voi
     return;
   }
   await interaction.deferReply();
+  const query = interaction.options.getString("busca", true);
+  logger.info("command.play.started", {
+    guildId: interaction.guildId,
+    userId: interaction.user.id,
+    voiceChannelId: memberVoiceChannel(interaction)?.id,
+    query: query.slice(0, 200),
+  });
   try {
     const [track] = await searchYouTube(
-      interaction.options.getString("busca", true),
+      query,
       interaction.user.username,
       1,
     );
@@ -90,7 +102,10 @@ async function handlePlay(interaction: ChatInputCommandInteraction): Promise<voi
     }
     await addTrack(interaction, track);
   } catch (error) {
-    console.error(error);
+    logger.error("command.play.failed", error, {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+    });
     await interaction.editReply("O YouTube não respondeu à pesquisa. Tente novamente em instantes.");
   }
 }
@@ -145,17 +160,30 @@ async function handleSearch(interaction: ChatInputCommandInteraction): Promise<v
       });
     }
   } catch (error) {
-    console.error(error);
+    logger.error("command.search.failed", error, {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+    });
     await interaction.editReply("O YouTube não respondeu à pesquisa. Tente novamente em instantes.");
   }
 }
 
 client.once(Events.ClientReady, (readyClient) => {
-  console.log(`Conectado como ${readyClient.user.tag}.`);
+  logger.info("discord.client.ready", {
+    bot: readyClient.user.tag,
+    guildCount: readyClient.guilds.cache.size,
+    logFile: logger.file,
+  });
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand() || !interaction.inCachedGuild()) return;
+  logger.info("command.received", {
+    command: interaction.commandName,
+    guildId: interaction.guildId,
+    channelId: interaction.channelId,
+    userId: interaction.user.id,
+  });
   try {
     switch (interaction.commandName) {
       case "play":
@@ -209,7 +237,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
     }
   } catch (error) {
-    console.error(error);
+    logger.error("command.unhandled_error", error, {
+      command: interaction.commandName,
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+    });
     const message = { content: "Ocorreu um erro inesperado ao executar o comando.", ephemeral: true } as const;
     if (interaction.replied || interaction.deferred) await interaction.followUp(message);
     else await interaction.reply(message);
@@ -225,4 +257,10 @@ async function shutdown(): Promise<void> {
 process.once("SIGINT", () => void shutdown());
 process.once("SIGTERM", () => void shutdown());
 
+logger.info("discord.client.login.started", {
+  nodeVersion: process.version,
+  platform: process.platform,
+  cwd: process.cwd(),
+  cookiesEnabled: Boolean(config.cookiesFile),
+});
 await client.login(config.token);

@@ -3,5 +3,6 @@ dist/
 .env
 secrets/
 *.cookies.txt
+logs/
 *.log
 .DS_Store

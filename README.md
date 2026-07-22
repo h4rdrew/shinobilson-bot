@@ -35,6 +35,16 @@ Para desenvolvimento com recarga automática:
 npm run dev
 ```
 
+## Logs e diagnóstico
+
+O bot registra eventos no terminal e em `logs/bot.log`. O arquivo inclui as etapas do comando, pesquisa do YouTube, conexão de voz, execução do `yt-dlp`, FFmpeg e mudanças de estado do player. Tokens e cookies não são registrados.
+
+Para acompanhar o arquivo em tempo real no PowerShell:
+
+```powershell
+Get-Content .\logs\bot.log -Wait
+```
+
 ## Observações sobre o YouTube
 
 O projeto usa `yt-dlp`, instalado automaticamente pelo `youtube-dl-exec`. Como o YouTube altera seus mecanismos com frequência, mantenha as dependências atualizadas. Em servidores onde o YouTube exige login, exporte seus próprios cookies no formato Netscape, proteja o arquivo e indique seu caminho em `YOUTUBE_COOKIES_FILE`. Nunca versione tokens ou cookies.

@@ -1,5 +1,6 @@
 import { youtubeDl as youtubedl } from "youtube-dl-exec";
 import { config } from "./config.js";
+import { logger } from "./logger.js";
 
 export interface Track {
   id: string;
@@ -70,20 +71,43 @@ export async function searchYouTube(
   const trimmed = query.trim();
   if (!trimmed) return [];
 
-  const target = isYouTubeUrl(trimmed) ? trimmed : `ytsearch${limit}:${trimmed}`;
-  const output = (await youtubedl(target, {
-    ...commonFlags(),
-    dumpSingleJson: true,
-    skipDownload: true,
-    flatPlaylist: true,
-    noPlaylist: isYouTubeUrl(trimmed),
-  })) as YtDlpResult;
+  const directUrl = isYouTubeUrl(trimmed);
+  const target = directUrl ? trimmed : `ytsearch${limit}:${trimmed}`;
+  const startedAt = Date.now();
+  logger.info("youtube.search.started", {
+    queryType: directUrl ? "url" : "text",
+    query: trimmed.slice(0, 200),
+    limit,
+    cookiesEnabled: Boolean(config.cookiesFile),
+  });
 
-  const entries = output.entries ?? [output];
-  return entries
-    .map((entry) => toTrack(entry, requestedBy))
-    .filter((track): track is Track => track !== null)
-    .slice(0, limit);
+  try {
+    const output = (await youtubedl(target, {
+      ...commonFlags(),
+      dumpSingleJson: true,
+      skipDownload: true,
+      flatPlaylist: true,
+      noPlaylist: directUrl,
+    })) as YtDlpResult;
+
+    const entries = output.entries ?? [output];
+    const tracks = entries
+      .map((entry) => toTrack(entry, requestedBy))
+      .filter((track): track is Track => track !== null)
+      .slice(0, limit);
+    logger.info("youtube.search.completed", {
+      elapsedMs: Date.now() - startedAt,
+      resultCount: tracks.length,
+      results: tracks.map(({ id, title, durationSeconds }) => ({ id, title, durationSeconds })),
+    });
+    return tracks;
+  } catch (error) {
+    logger.error("youtube.search.failed", error, {
+      elapsedMs: Date.now() - startedAt,
+      queryType: directUrl ? "url" : "text",
+    });
+    throw error;
+  }
 }
 
 export function createYouTubeProcess(url: string) {
@@ -91,11 +115,16 @@ export function createYouTubeProcess(url: string) {
     throw new Error("Apenas links do YouTube são permitidos.");
   }
 
-  return youtubedl.exec(url, {
+  const subprocess = youtubedl.exec(url, {
     ...commonFlags(),
     output: "-",
     format: "bestaudio/best",
     noPlaylist: true,
     quiet: true,
   });
+  logger.info("youtube.stream.spawned", {
+    videoId: new URL(url).searchParams.get("v") ?? new URL(url).pathname.slice(1),
+    pid: subprocess.pid,
+  });
+  return subprocess;
 }
