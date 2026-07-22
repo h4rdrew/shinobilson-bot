@@ -44,7 +44,6 @@ export function isYouTubeUrl(value: string): boolean {
 function commonFlags() {
   return {
     noWarnings: true,
-    noCallHome: true,
     ...(config.cookiesFile ? { cookies: config.cookiesFile } : {}),
   };
 }

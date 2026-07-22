@@ -256,6 +256,15 @@ async function shutdown(): Promise<void> {
 
 process.once("SIGINT", () => void shutdown());
 process.once("SIGTERM", () => void shutdown());
+process.on("uncaughtException", (error) => {
+  logger.error("process.uncaught_exception", error);
+  queues.destroyAll();
+  client.destroy();
+  process.exitCode = 1;
+});
+process.on("unhandledRejection", (reason) => {
+  logger.error("process.unhandled_rejection", reason);
+});
 
 logger.info("discord.client.login.started", {
   nodeVersion: process.version,
@@ -263,4 +272,10 @@ logger.info("discord.client.login.started", {
   cwd: process.cwd(),
   cookiesEnabled: Boolean(config.cookiesFile),
 });
+if (config.missingCookiesFile) {
+  logger.warn("youtube.cookies.not_found", {
+    configuredPath: config.missingCookiesFile,
+    action: "O bot continuará sem cookies. Limpe YOUTUBE_COOKIES_FILE ou crie o arquivo.",
+  });
+}
 await client.login(config.token);

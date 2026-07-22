@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createRequire } from "node:module";
+import { pipeline } from "node:stream";
 import {
   AudioPlayerStatus,
   NoSubscriberBehavior,
@@ -25,6 +26,7 @@ export class GuildMusicQueue {
   readonly player: AudioPlayer;
   private connection?: VoiceConnection;
   private processes: ChildProcess[] = [];
+  private readonly expectedTerminations = new WeakSet<ChildProcess>();
   private textChannel?: SendableChannels;
   private stopping = false;
 
@@ -159,8 +161,9 @@ export class GuildMusicQueue {
   }
 
   private killProcesses(): void {
-    for (const process of this.processes) {
-      if (!process.killed) process.kill();
+    for (const childProcess of this.processes) {
+      this.expectedTerminations.add(childProcess);
+      if (!childProcess.killed) childProcess.kill();
     }
     this.processes = [];
   }
@@ -189,7 +192,13 @@ export class GuildMusicQueue {
         ytdlpError = `${ytdlpError}${chunk.toString()}`.slice(-4_000);
       });
       void downloader.catch((error: unknown) => {
-        if (!downloader.killed && !this.stopping) {
+        const childProcess = downloader as unknown as ChildProcess;
+        if (this.expectedTerminations.has(childProcess)) {
+          logger.debug("youtube.stream.cancelled", {
+            guildId: this.guild.id,
+            trackId: track.id,
+          });
+        } else {
           logger.error("youtube.stream.failed", error, {
             guildId: this.guild.id,
             trackId: track.id,
@@ -202,7 +211,26 @@ export class GuildMusicQueue {
         "-hide_banner", "-loglevel", "error", "-i", "pipe:0",
         "-f", "s16le", "-ar", "48000", "-ac", "2", "pipe:1",
       ], { stdio: ["pipe", "pipe", "pipe"] });
-      downloader.stdout.pipe(ffmpeg.stdin!);
+      pipeline(downloader.stdout, ffmpeg.stdin!, (error) => {
+        if (!error) return;
+        const expectedClosure =
+          downloader.killed ||
+          ffmpeg.killed ||
+          this.stopping ||
+          this.current?.id !== track.id;
+        if (expectedClosure) {
+          logger.debug("audio.pipeline.closed", {
+            guildId: this.guild.id,
+            trackId: track.id,
+            reason: error.message,
+          });
+        } else {
+          logger.error("audio.pipeline.failed", error, {
+            guildId: this.guild.id,
+            trackId: track.id,
+          });
+        }
+      });
       this.processes = [downloader as unknown as ChildProcess, ffmpeg];
       logger.info("ffmpeg.spawned", {
         guildId: this.guild.id,
