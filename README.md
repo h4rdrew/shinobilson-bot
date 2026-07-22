@@ -193,6 +193,11 @@ Quando usar cookies no container, mantenha o arquivo em `secrets/youtube-cookies
 YOUTUBE_COOKIES_FILE=/app/secrets/youtube-cookies.txt
 ```
 
+O diretório `secrets` permanece montado como somente leitura. Para permitir que o `yt-dlp`
+atualize seu cookie jar sem alterar o arquivo original, o bot cria uma cópia privada e temporária
+para cada consulta ou reprodução e a remove quando o processo termina. O runtime Node.js incluído
+na imagem também é usado pelo `yt-dlp` para resolver os desafios JavaScript do YouTube.
+
 ## Criando uma release
 
 O workflow de release é acionado por tags no formato `vX.Y.Z`. A versão da tag precisa ser igual ao campo `version` do `package.json`.

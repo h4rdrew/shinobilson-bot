@@ -1,3 +1,7 @@
+import { constants, chmodSync, copyFileSync, unlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { youtubeDl as youtubedl } from "youtube-dl-exec";
 import { config } from "./config.js";
 import { logger } from "./logger.js";
@@ -41,10 +45,44 @@ export function isYouTubeUrl(value: string): boolean {
   }
 }
 
-function commonFlags() {
+interface RuntimeCookies {
+  file?: string;
+  cleanup: () => void;
+}
+
+function prepareRuntimeCookies(): RuntimeCookies {
+  if (!config.cookiesFile) return { cleanup: () => undefined };
+
+  const file = join(
+    tmpdir(),
+    `shinobilson-youtube-cookies-${process.pid}-${randomUUID()}.txt`,
+  );
+  copyFileSync(config.cookiesFile, file, constants.COPYFILE_EXCL);
+  chmodSync(file, 0o600);
+
+  let removed = false;
+  return {
+    file,
+    cleanup: () => {
+      if (removed) return;
+      removed = true;
+      try {
+        unlinkSync(file);
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code !== "ENOENT") {
+          logger.warn("youtube.cookies.cleanup_failed", { code });
+        }
+      }
+    },
+  };
+}
+
+function commonFlags(cookiesFile?: string) {
   return {
     noWarnings: true,
-    ...(config.cookiesFile ? { cookies: config.cookiesFile } : {}),
+    jsRuntimes: "node" as const,
+    ...(cookiesFile ? { cookies: cookiesFile } : {}),
   };
 }
 
@@ -80,9 +118,10 @@ export async function searchYouTube(
     cookiesEnabled: Boolean(config.cookiesFile),
   });
 
+  const runtimeCookies = prepareRuntimeCookies();
   try {
     const output = (await youtubedl(target, {
-      ...commonFlags(),
+      ...commonFlags(runtimeCookies.file),
       dumpSingleJson: true,
       skipDownload: true,
       flatPlaylist: true,
@@ -106,6 +145,8 @@ export async function searchYouTube(
       queryType: directUrl ? "url" : "text",
     });
     throw error;
+  } finally {
+    runtimeCookies.cleanup();
   }
 }
 
@@ -114,13 +155,22 @@ export function createYouTubeProcess(url: string) {
     throw new Error("Apenas links do YouTube são permitidos.");
   }
 
-  const subprocess = youtubedl.exec(url, {
-    ...commonFlags(),
-    output: "-",
-    format: "bestaudio/best",
-    noPlaylist: true,
-    quiet: true,
-  });
+  const runtimeCookies = prepareRuntimeCookies();
+  let subprocess;
+  try {
+    subprocess = youtubedl.exec(url, {
+      ...commonFlags(runtimeCookies.file),
+      output: "-",
+      format: "bestaudio/best",
+      noPlaylist: true,
+      quiet: true,
+    });
+  } catch (error) {
+    runtimeCookies.cleanup();
+    throw error;
+  }
+  subprocess.once("close", runtimeCookies.cleanup);
+  subprocess.once("error", runtimeCookies.cleanup);
   logger.info("youtube.stream.spawned", {
     videoId: new URL(url).searchParams.get("v") ?? new URL(url).pathname.slice(1),
     pid: subprocess.pid,
