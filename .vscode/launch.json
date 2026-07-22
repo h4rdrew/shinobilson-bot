@@ -2,6 +2,20 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Docker: deploy release",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${workspaceFolder}\\docker-deploy.ps1\" -Version ${input:releaseVersion}",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Docker: rollback release",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${workspaceFolder}\\docker-rollback.ps1\"",
+      "cwd": "${workspaceFolder}"
+    },
+    {
       "name": "Docker: build + deploy",
       "type": "node-terminal",
       "request": "launch",
@@ -42,6 +56,14 @@
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "releaseVersion",
+      "type": "promptString",
+      "description": "Versão publicada no GHCR, sem o prefixo v",
+      "default": "1.0.0"
     }
   ]
 }

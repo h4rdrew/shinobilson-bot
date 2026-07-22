@@ -6,5 +6,6 @@ dist
 logs
 secrets
 .env
+.deploy.env*
 *.log
 README.md

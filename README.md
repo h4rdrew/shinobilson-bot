@@ -119,6 +119,26 @@ git tag -a v1.0.1 -m "Release v1.0.1"
 git push origin v1.0.1
 ```
 
+### Deploy de uma release no WSL 2
+
+Depois que o workflow publicar a imagem, faça o deploy de uma versão específica pelo PowerShell:
+
+```powershell
+.\docker-deploy.ps1 -Version 1.0.0
+```
+
+O script baixa a imagem do GHCR, atualiza o container, verifica se ele permaneceu em execução e registra a versão anterior. No VS Code, o mesmo fluxo está disponível em **Docker: deploy release**.
+
+Para voltar à versão anterior:
+
+```powershell
+.\docker-rollback.ps1
+```
+
+Ou selecione **Docker: rollback release** no VS Code. Se a nova versão não iniciar, o deploy tenta restaurar automaticamente a versão anterior.
+
+Se o pacote do GHCR for privado, autentique o Docker no registry antes do primeiro deploy usando um token com permissão `read:packages`. Pacotes públicos não exigem login para download.
+
 ## Observações sobre o YouTube
 
 O projeto usa `yt-dlp`, instalado automaticamente pelo `youtube-dl-exec`. Como o YouTube altera seus mecanismos com frequência, mantenha as dependências atualizadas. Em servidores onde o YouTube exige login, exporte seus próprios cookies no formato Netscape, proteja o arquivo e indique seu caminho em `YOUTUBE_COOKIES_FILE`. Nunca versione tokens ou cookies.
