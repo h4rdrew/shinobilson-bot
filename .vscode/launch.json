@@ -2,6 +2,13 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Docker: build + deploy",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${workspaceFolder}\\docker-up.ps1\" -SkipRegister",
+      "cwd": "${workspaceFolder}"
+    },
+    {
       "name": "Discord Bot: build + start",
       "type": "node",
       "request": "launch",

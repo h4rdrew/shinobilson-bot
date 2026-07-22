@@ -55,6 +55,8 @@ Com o Docker configurado no WSL 2, abra o PowerShell na raiz do projeto e execut
 
 O script valida o `.env`, constrói uma imagem Linux, registra os comandos slash, cria o container e inicia o bot em segundo plano. Os logs ficam persistidos na pasta `logs` e a pasta opcional `secrets` é montada como somente leitura.
 
+No VS Code, a configuração **Docker: build + deploy** recompila e publica uma nova versão no container sem registrar novamente os comandos slash. Se estiver executando o bot localmente, encerre-o antes desse deploy para evitar duas sessões com o mesmo token.
+
 Também é possível executar diretamente dentro do WSL:
 
 ```bash

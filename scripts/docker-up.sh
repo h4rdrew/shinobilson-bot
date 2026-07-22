@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+REGISTER_COMMANDS=true
+if [[ "${1:-}" == "--skip-register" ]]; then
+  REGISTER_COMMANDS=false
+elif [[ -n "${1:-}" ]]; then
+  echo "Erro: argumento desconhecido: $1" >&2
+  exit 1
+fi
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_DIR}"
@@ -47,8 +55,12 @@ mkdir -p logs secrets
 echo "[1/4] Construindo a imagem Linux do bot..."
 "${COMPOSE[@]}" build bot
 
-echo "[2/4] Registrando os comandos slash no Discord..."
-"${COMPOSE[@]}" run --rm --no-deps bot node dist/register-commands.js
+if [[ "${REGISTER_COMMANDS}" == "true" ]]; then
+  echo "[2/4] Registrando os comandos slash no Discord..."
+  "${COMPOSE[@]}" run --rm --no-deps bot node dist/register-commands.js
+else
+  echo "[2/4] Registro dos comandos ignorado para este deploy."
+fi
 
 echo "[3/4] Criando e iniciando o container..."
 "${COMPOSE[@]}" up -d --remove-orphans bot
