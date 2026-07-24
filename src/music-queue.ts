@@ -30,10 +30,12 @@ export class GuildMusicQueue {
   private readonly expectedTerminations = new WeakSet<ChildProcess>();
   private textChannel?: SendableChannels;
   private stopping = false;
+  private idleDisconnectTimer?: NodeJS.Timeout;
 
   constructor(
     readonly guild: Guild,
     private readonly onEmpty: () => void,
+    private readonly emptyQueueDisconnectDelayMs = 60_000,
   ) {
     this.player = createAudioPlayer({
       behaviors: { noSubscriber: NoSubscriberBehavior.Pause },
@@ -58,6 +60,7 @@ export class GuildMusicQueue {
   }
 
   async connect(channel: VoiceBasedChannel, textChannel: SendableChannels): Promise<void> {
+    this.cancelIdleDisconnect();
     this.textChannel = textChannel;
     if (this.connection?.joinConfig.channelId === channel.id) {
       logger.debug("voice.connection.reused", { guildId: this.guild.id, channelId: channel.id });
@@ -102,6 +105,7 @@ export class GuildMusicQueue {
   }
 
   async enqueue(track: Track, placement: QueuePlacement = "end"): Promise<void> {
+    this.cancelIdleDisconnect();
     if (placement === "next") this.tracks.unshift(track);
     else this.tracks.push(track);
     logger.info("queue.track.added", {
@@ -150,6 +154,7 @@ export class GuildMusicQueue {
   }
 
   destroy(): void {
+    this.cancelIdleDisconnect();
     logger.info("queue.destroyed", {
       guildId: this.guild.id,
       currentTrackId: this.current?.id,
@@ -190,7 +195,7 @@ export class GuildMusicQueue {
     if (this.current || this.stopping) return;
     const track = this.tracks.shift();
     if (!track) {
-      this.destroy();
+      this.scheduleIdleDisconnect();
       return;
     }
 
@@ -288,6 +293,28 @@ export class GuildMusicQueue {
       this.finishCurrent();
       await this.playNext();
     }
+  }
+
+  private scheduleIdleDisconnect(): void {
+    if (this.idleDisconnectTimer || this.stopping) return;
+    logger.info("queue.disconnect.scheduled", {
+      guildId: this.guild.id,
+      delayMs: this.emptyQueueDisconnectDelayMs,
+    });
+    this.idleDisconnectTimer = setTimeout(() => {
+      this.idleDisconnectTimer = undefined;
+      if (this.current || this.tracks.length || this.stopping) return;
+      logger.info("queue.disconnect.timeout", { guildId: this.guild.id });
+      this.destroy();
+    }, this.emptyQueueDisconnectDelayMs);
+    this.idleDisconnectTimer.unref();
+  }
+
+  private cancelIdleDisconnect(): void {
+    if (!this.idleDisconnectTimer) return;
+    clearTimeout(this.idleDisconnectTimer);
+    this.idleDisconnectTimer = undefined;
+    logger.debug("queue.disconnect.cancelled", { guildId: this.guild.id });
   }
 
   private async notify(message: string): Promise<void> {

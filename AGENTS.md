@@ -40,7 +40,7 @@ Não introduza outras fontes de música sem uma solicitação explícita. O play
 - Não deixe processos `yt-dlp` ou FFmpeg órfãos ao trocar, parar ou destruir uma fila.
 - Controles de reprodução só podem ser usados por membros no mesmo canal de voz do bot.
 - Uma falha ao enviar mensagem no canal de texto não deve interromper a música.
-- A fila deve ser isolada por `guildId` e removida do gerenciador quando ficar vazia.
+- A fila deve ser isolada por `guildId`. Quando ficar vazia, deve permanecer conectada por 1 minuto antes de ser removida; uma nova música cancela o temporizador e `/stop` desconecta imediatamente.
 
 ## Configuração e segredos
 

@@ -27,10 +27,11 @@ function memberVoiceChannel(interaction: ChatInputCommandInteraction): VoiceBase
 
 async function requireControl(
   interaction: ChatInputCommandInteraction,
+  requireCurrent = true,
 ) {
   const queue = interaction.guildId ? queues.get(interaction.guildId) : undefined;
   const member = interaction.member as GuildMember;
-  if (!queue?.current) {
+  if (!queue || (requireCurrent && !queue.current)) {
     await interaction.reply({ content: "Não há nenhuma música tocando.", ephemeral: true });
     return null;
   }
@@ -220,7 +221,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         break;
       }
       case "stop": {
-        const queue = await requireControl(interaction);
+        const queue = await requireControl(interaction, false);
         if (queue) {
           queue.destroy();
           await interaction.reply("⏹️ Fila limpa e bot desconectado.");
