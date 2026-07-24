@@ -248,6 +248,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
         await interaction.reply({ embeds: [embed] });
         break;
       }
+      case "remove": {
+        const queue = await requireControl(interaction);
+        if (!queue) break;
+        const position = interaction.options.getInteger("posicao", true);
+        const removed = queue.remove(position);
+        await interaction.reply(
+          removed
+            ? `🗑️ **${removed.title}** foi removida da fila.`
+            : {
+                content: `Não existe uma música na posição ${position}. Use \`/queue\` para consultar a fila.`,
+                ephemeral: true,
+              },
+        );
+        break;
+      }
     }
   } catch (error) {
     logger.error("command.unhandled_error", error, {
