@@ -44,7 +44,11 @@ async function requireControl(
   return queue;
 }
 
-async function addTrack(interaction: ChatInputCommandInteraction, track: Track): Promise<void> {
+async function addTrack(
+  interaction: ChatInputCommandInteraction,
+  track: Track,
+  placement: "end" | "next" = "end",
+): Promise<void> {
   const voiceChannel = memberVoiceChannel(interaction);
   if (!voiceChannel || !interaction.guild || !interaction.channel?.isSendable()) {
     await interaction.editReply("Entre em um canal de voz antes de escolher uma música.");
@@ -60,10 +64,12 @@ async function addTrack(interaction: ChatInputCommandInteraction, track: Track):
   const wasPlaying = Boolean(queue.current);
   try {
     await queue.connect(voiceChannel, interaction.channel);
-    await queue.enqueue(track);
+    await queue.enqueue(track, placement);
     await interaction.editReply(
       wasPlaying
-        ? `✅ **${track.title}** foi adicionada à fila.`
+        ? placement === "next"
+          ? `✅ **${track.title}** foi adicionada como próxima da fila.`
+          : `✅ **${track.title}** foi adicionada à fila.`
         : `✅ Preparando **${track.title}**…`,
     );
   } catch (error) {
@@ -77,7 +83,10 @@ async function addTrack(interaction: ChatInputCommandInteraction, track: Track):
   }
 }
 
-async function handlePlay(interaction: ChatInputCommandInteraction): Promise<void> {
+async function handlePlay(
+  interaction: ChatInputCommandInteraction,
+  placement: "end" | "next" = "end",
+): Promise<void> {
   if (!memberVoiceChannel(interaction)) {
     await interaction.reply({ content: "Entre em um canal de voz primeiro.", ephemeral: true });
     return;
@@ -89,6 +98,7 @@ async function handlePlay(interaction: ChatInputCommandInteraction): Promise<voi
     userId: interaction.user.id,
     voiceChannelId: memberVoiceChannel(interaction)?.id,
     query: query.slice(0, 200),
+    placement,
   });
   try {
     const [track] = await searchYouTube(
@@ -100,7 +110,7 @@ async function handlePlay(interaction: ChatInputCommandInteraction): Promise<voi
       await interaction.editReply("Não encontrei nenhum resultado no YouTube.");
       return;
     }
-    await addTrack(interaction, track);
+    await addTrack(interaction, track, placement);
   } catch (error) {
     logger.error("command.play.failed", error, {
       guildId: interaction.guildId,
@@ -188,6 +198,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
     switch (interaction.commandName) {
       case "play":
         await handlePlay(interaction);
+        break;
+      case "play-next":
+        await handlePlay(interaction, "next");
         break;
       case "search":
         await handleSearch(interaction);

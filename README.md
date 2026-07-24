@@ -6,6 +6,7 @@
 Bot de música para Discord com reprodução exclusiva do YouTube e comandos slash:
 
 - `/play busca:<nome ou URL>` — toca uma música ou adiciona à fila;
+- `/play-next busca:<nome ou URL>` — adiciona uma música como próxima da fila;
 - `/search busca:<nome>` — mostra até cinco resultados para seleção;
 - `/queue` — exibe a música atual e a fila;
 - `/pause` — pausa ou retoma a reprodução;

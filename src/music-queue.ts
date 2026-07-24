@@ -19,6 +19,7 @@ import { logger } from "./logger.js";
 
 const require = createRequire(import.meta.url);
 const ffmpegPath = require("ffmpeg-static") as string | null;
+type QueuePlacement = "end" | "next";
 
 export class GuildMusicQueue {
   readonly tracks: Track[] = [];
@@ -100,12 +101,14 @@ export class GuildMusicQueue {
     });
   }
 
-  async enqueue(track: Track): Promise<void> {
-    this.tracks.push(track);
+  async enqueue(track: Track, placement: QueuePlacement = "end"): Promise<void> {
+    if (placement === "next") this.tracks.unshift(track);
+    else this.tracks.push(track);
     logger.info("queue.track.added", {
       guildId: this.guild.id,
       trackId: track.id,
       title: track.title,
+      placement,
       waiting: this.tracks.length,
     });
     if (!this.current) await this.playNext();

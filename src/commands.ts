@@ -11,6 +11,15 @@ export const commands = [
         .setRequired(true),
     ),
   new SlashCommandBuilder()
+    .setName("play-next")
+    .setDescription("Adiciona uma música como próxima da fila")
+    .addStringOption((option) =>
+      option
+        .setName("busca")
+        .setDescription("Nome da música ou link do YouTube")
+        .setRequired(true),
+    ),
+  new SlashCommandBuilder()
     .setName("skip")
     .setDescription("Pula a música atual"),
   new SlashCommandBuilder()
