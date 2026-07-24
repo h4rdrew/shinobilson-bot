@@ -1,6 +1,6 @@
 {
   "name": "shinobilson-bot",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Bot de música para Discord com integração exclusiva ao YouTube.",
   "type": "module",
