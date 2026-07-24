@@ -14,6 +14,9 @@ Bot de música para Discord com reprodução exclusiva do YouTube e comandos sla
 - `/skip` — pula a música atual;
 - `/stop` — limpa a fila e desconecta o bot.
 
+Quando a última música termina, o bot permanece no canal de voz por 1 minuto. Uma nova música
+cancela a desconexão e começa imediatamente; `/stop` continua desconectando o bot na hora.
+
 ## Início rápido com Docker (sem código-fonte)
 
 Este é o caminho recomendado para quem deseja apenas executar o bot. Não é necessário instalar VS Code, Node.js, Python ou FFmpeg: eles já estão incluídos na imagem.
