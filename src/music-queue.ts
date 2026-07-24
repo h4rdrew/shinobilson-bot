@@ -120,6 +120,21 @@ export class GuildMusicQueue {
     return this.player.stop(true);
   }
 
+  remove(position: number): Track | undefined {
+    if (!Number.isInteger(position) || position < 1) return undefined;
+    const [removed] = this.tracks.splice(position - 1, 1);
+    if (removed) {
+      logger.info("queue.track.removed", {
+        guildId: this.guild.id,
+        trackId: removed.id,
+        title: removed.title,
+        position,
+        waiting: this.tracks.length,
+      });
+    }
+    return removed;
+  }
+
   togglePause(): "paused" | "resumed" | "nothing" {
     if (!this.current) return "nothing";
     if (this.player.state.status === AudioPlayerStatus.Paused) {

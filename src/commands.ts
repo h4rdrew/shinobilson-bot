@@ -26,6 +26,16 @@ export const commands = [
     .setName("queue")
     .setDescription("Exibe a fila de músicas"),
   new SlashCommandBuilder()
+    .setName("remove")
+    .setDescription("Remove uma música específica da fila de espera")
+    .addIntegerOption((option) =>
+      option
+        .setName("posicao")
+        .setDescription("Posição mostrada na lista de próximas músicas")
+        .setMinValue(1)
+        .setRequired(true),
+    ),
+  new SlashCommandBuilder()
     .setName("pause")
     .setDescription("Pausa ou retoma a música atual"),
   new SlashCommandBuilder()

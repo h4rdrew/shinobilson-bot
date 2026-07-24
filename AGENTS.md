@@ -4,7 +4,7 @@ Este arquivo orienta agentes que alterem este repositório. As instruções vale
 
 ## Objetivo do projeto
 
-O Shinobilson Bot é um bot de música para Discord com integração exclusiva ao YouTube. Ele oferece os comandos slash `/play`, `/play-next`, `/search`, `/queue`, `/pause`, `/skip` e `/stop`, mantendo uma fila independente por servidor.
+O Shinobilson Bot é um bot de música para Discord com integração exclusiva ao YouTube. Ele oferece os comandos slash `/play`, `/play-next`, `/search`, `/queue`, `/remove`, `/pause`, `/skip` e `/stop`, mantendo uma fila independente por servidor.
 
 ## Stack e requisitos
 
