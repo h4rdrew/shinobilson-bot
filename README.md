@@ -261,3 +261,9 @@ Se o pacote do GHCR for privado, autentique o Docker no registry antes do primei
 O projeto usa `yt-dlp`, instalado automaticamente pelo `youtube-dl-exec`. Como o YouTube altera seus mecanismos com frequência, mantenha as dependências atualizadas. Em servidores onde o YouTube exige login, exporte seus próprios cookies no formato Netscape, proteja o arquivo e indique seu caminho em `YOUTUBE_COOKIES_FILE`. Nunca versione tokens ou cookies.
 
 Use o bot apenas para conteúdo que você tem autorização para reproduzir e observe os termos do YouTube e do Discord.
+
+## Licença
+
+O código original do Shinobilson Bot é disponibilizado sob a [Zero-Clause BSD (0BSD)](LICENSE). Você pode usar, copiar, modificar e distribuir o software para qualquer finalidade, inclusive comercial, sem obrigação de atribuição.
+
+Componentes de terceiros mantêm suas próprias licenças. Consulte [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) para o inventário das dependências diretas e dos executáveis distribuídos com o projeto.
