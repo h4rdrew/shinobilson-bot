@@ -109,6 +109,40 @@ Antes de enviar a pull request, confirme também que não há erros de whitespac
 git diff --check
 ```
 
+## Docker e WSL 2
+
+No Windows com Docker configurado no WSL 2, o fluxo completo de build e execução local pode ser iniciado pelo PowerShell na raiz do projeto:
+
+```powershell
+.\docker-up.ps1
+```
+
+O script valida o `.env`, constrói a imagem Linux, registra os comandos slash, recria o container e inicia o Bot em segundo plano. Não use esse fluxo com o mesmo token de outra execução ativa.
+
+Dentro do WSL, o equivalente é:
+
+```bash
+bash ./scripts/docker-up.sh
+```
+
+Comandos úteis para desenvolvimento:
+
+```bash
+# Acompanhar os logs
+docker compose logs -f bot
+
+# Reiniciar sem reconstruir
+docker compose restart bot
+
+# Parar e remover o container
+docker compose down
+
+# Reconstruir depois de alterar o código
+bash ./scripts/docker-up.sh
+```
+
+No VS Code, **Docker: build + deploy** recompila e sobe a nova versão sem registrar novamente os comandos slash. Use `npm run register` ou o fluxo completo apenas quando a estrutura pública dos comandos mudar.
+
 ## Pull requests
 
 Uma boa pull request deve:
@@ -122,6 +156,8 @@ Uma boa pull request deve:
 - manter `dist/`, `.env`, cookies, `secrets/` e `logs/` fora do commit.
 
 O CI precisa concluir com sucesso antes do merge. Revisões podem solicitar ajustes para preservar segurança, compatibilidade e as invariantes do player.
+
+Releases e deploys versionados são responsabilidade dos mantenedores. O processo está documentado em [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Licença das contribuições
 
