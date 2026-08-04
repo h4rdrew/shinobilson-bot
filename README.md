@@ -3,6 +3,8 @@
 [![CI](https://github.com/h4rdrew/shinobilson-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/h4rdrew/shinobilson-bot/actions/workflows/ci.yml)
 [![Release](https://github.com/h4rdrew/shinobilson-bot/actions/workflows/release.yml/badge.svg)](https://github.com/h4rdrew/shinobilson-bot/actions/workflows/release.yml)
 
+[Política de Privacidade](https://h4rdrew.github.io/shinobilson-bot/privacy.html) · [Termos de Serviço](https://h4rdrew.github.io/shinobilson-bot/terms.html)
+
 Bot de música para Discord com reprodução exclusiva do YouTube e comandos slash:
 
 - `/play busca:<nome ou URL>` — toca uma música ou adiciona à fila;
