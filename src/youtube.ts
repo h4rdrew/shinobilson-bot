@@ -13,6 +13,7 @@ export interface Track {
   durationSeconds: number;
   thumbnail?: string;
   requestedBy: string;
+  isLive?: boolean;
 }
 
 interface YtDlpEntry {
@@ -22,6 +23,8 @@ interface YtDlpEntry {
   url?: string;
   duration?: number;
   thumbnail?: string;
+  is_live?: boolean;
+  live_status?: string;
 }
 
 interface YtDlpResult extends YtDlpEntry {
@@ -97,6 +100,9 @@ function toTrack(entry: YtDlpEntry, requestedBy: string): Track | null {
     durationSeconds: Math.max(0, Math.floor(entry.duration ?? 0)),
     thumbnail: entry.thumbnail,
     requestedBy,
+    isLive: entry.is_live === true ||
+      entry.live_status === "is_live" ||
+      entry.live_status === "is_upcoming",
   };
 }
 

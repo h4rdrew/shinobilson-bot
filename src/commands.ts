@@ -1,4 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
+import { RANDOM_GENRES } from "./random.js";
 
 export const commands = [
   new SlashCommandBuilder()
@@ -18,6 +19,23 @@ export const commands = [
         .setName("busca")
         .setDescription("Nome da música ou link do YouTube")
         .setRequired(true),
+    ),
+  new SlashCommandBuilder()
+    .setName("random")
+    .setDescription("Adiciona músicas aleatórias de um gênero à fila")
+    .addStringOption((option) =>
+      option
+        .setName("genero")
+        .setDescription("Gênero musical")
+        .setRequired(true)
+        .addChoices(...RANDOM_GENRES.map(({ name, value }) => ({ name, value }))),
+    )
+    .addIntegerOption((option) =>
+      option
+        .setName("quantidade")
+        .setDescription("Quantidade de músicas (padrão: 1)")
+        .setMinValue(1)
+        .setMaxValue(10),
     ),
   new SlashCommandBuilder()
     .setName("skip")

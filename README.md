@@ -9,6 +9,7 @@ Bot de música para Discord com reprodução exclusiva do YouTube e comandos sla
 
 - `/play busca:<nome ou URL>` — toca uma música ou adiciona à fila;
 - `/play-next busca:<nome ou URL>` — adiciona uma música como próxima da fila;
+- `/random genero:<gênero> quantidade:<1-10>` — adiciona músicas aleatórias do gênero escolhido à fila;
 - `/search busca:<nome>` — mostra até cinco resultados para seleção;
 - `/queue` — exibe a música atual e a fila;
 - `/remove posicao:<número>` — remove uma música específica da fila de espera;

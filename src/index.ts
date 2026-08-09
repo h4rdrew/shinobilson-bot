@@ -14,6 +14,7 @@ import { formatDuration, truncate } from "./format.js";
 import { QueueManager } from "./music-queue.js";
 import { searchYouTube, type Track } from "./youtube.js";
 import { logger } from "./logger.js";
+import { buildRandomSearch, getRandomGenre, selectRandomTracks } from "./random.js";
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
@@ -179,6 +180,105 @@ async function handleSearch(interaction: ChatInputCommandInteraction): Promise<v
   }
 }
 
+async function handleRandom(interaction: ChatInputCommandInteraction): Promise<void> {
+  const voiceChannel = memberVoiceChannel(interaction);
+  if (!voiceChannel) {
+    await interaction.reply({ content: "Entre em um canal de voz primeiro.", ephemeral: true });
+    return;
+  }
+
+  const existingQueue = interaction.guildId ? queues.get(interaction.guildId) : undefined;
+  if (existingQueue?.current &&
+      !existingQueue.isMemberInMyChannel(interaction.member as GuildMember)) {
+    await interaction.reply({
+      content: "Já estou tocando música em outro canal de voz.",
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const genreValue = interaction.options.getString("genero", true);
+  const genre = getRandomGenre(genreValue);
+  if (!genre) {
+    await interaction.reply({ content: "Esse gênero não é suportado.", ephemeral: true });
+    return;
+  }
+
+  const quantity = interaction.options.getInteger("quantidade") ?? 1;
+  await interaction.deferReply();
+  const query = buildRandomSearch(genre);
+  logger.info("command.random.started", {
+    guildId: interaction.guildId,
+    userId: interaction.user.id,
+    voiceChannelId: voiceChannel.id,
+    genre: genre.value,
+    quantity,
+    query,
+  });
+
+  try {
+    const candidates = await searchYouTube(query, interaction.user.username, 20);
+    const selected = selectRandomTracks(candidates, quantity);
+    logger.info("command.random.candidates_filtered", {
+      guildId: interaction.guildId,
+      genre: genre.value,
+      candidateCount: candidates.length,
+      selectedCount: selected.length,
+      selectedTrackIds: selected.map((track) => track.id),
+    });
+    if (!selected.length) {
+      await interaction.editReply(
+        "Não encontrei músicas válidas desse gênero. Tente novamente em instantes.",
+      );
+      return;
+    }
+    if (!interaction.guild || !interaction.channel?.isSendable()) {
+      await interaction.editReply("Não consegui acessar este servidor ou canal de texto.");
+      return;
+    }
+
+    const queue = queues.getOrCreate(interaction.guild);
+    const wasPlaying = Boolean(queue.current);
+    try {
+      await queue.connect(voiceChannel, interaction.channel);
+      for (const track of selected) await queue.enqueue(track);
+    } catch (error) {
+      logger.error("discord.voice.join.failed", error, {
+        guildId: interaction.guildId,
+        channelId: voiceChannel.id,
+        command: "random",
+      });
+      if (!queue.current) queue.destroy();
+      await interaction.editReply(
+        "Não consegui entrar no canal de voz. Confira minhas permissões.",
+      );
+      return;
+    }
+
+    const trackList = selected
+      .map((track, index) => `${index + 1}. **${truncate(track.title, 120)}**`)
+      .join("\n");
+    await interaction.editReply(
+      `${wasPlaying ? "✅" : "🎲"} ${selected.length} música(s) aleatória(s) de **${genre.name}** ${
+        wasPlaying ? "adicionada(s) à fila" : "selecionada(s)"
+      }:\n${trackList}`,
+    );
+    logger.info("command.random.completed", {
+      guildId: interaction.guildId,
+      genre: genre.value,
+      addedCount: selected.length,
+    });
+  } catch (error) {
+    logger.error("command.random.failed", error, {
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+      genre: genre.value,
+      quantity,
+    });
+    await interaction.editReply("O YouTube não respondeu à pesquisa. Tente novamente em instantes.");
+  }
+}
+
 client.once(Events.ClientReady, (readyClient) => {
   logger.info("discord.client.ready", {
     bot: readyClient.user.tag,
@@ -205,6 +305,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         break;
       case "search":
         await handleSearch(interaction);
+        break;
+      case "random":
+        await handleRandom(interaction);
         break;
       case "skip": {
         const queue = await requireControl(interaction);
