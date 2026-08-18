@@ -1,4 +1,11 @@
-import { constants, chmodSync, copyFileSync, unlinkSync } from "node:fs";
+import {
+  constants,
+  chmodSync,
+  copyFileSync,
+  mkdtempSync,
+  rmSync,
+  unlinkSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -53,6 +60,11 @@ interface RuntimeCookies {
   cleanup: () => void;
 }
 
+interface RuntimeDirectory {
+  path: string;
+  cleanup: () => void;
+}
+
 function prepareRuntimeCookies(): RuntimeCookies {
   if (!config.cookiesFile) return { cleanup: () => undefined };
 
@@ -76,6 +88,26 @@ function prepareRuntimeCookies(): RuntimeCookies {
         if (code !== "ENOENT") {
           logger.warn("youtube.cookies.cleanup_failed", { code });
         }
+      }
+    },
+  };
+}
+
+function prepareRuntimeDirectory(): RuntimeDirectory {
+  const path = mkdtempSync(join(tmpdir(), "shinobilson-youtube-stream-"));
+  chmodSync(path, 0o700);
+
+  let removed = false;
+  return {
+    path,
+    cleanup: () => {
+      if (removed) return;
+      removed = true;
+      try {
+        rmSync(path, { recursive: true, force: true });
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        logger.warn("youtube.stream.workspace_cleanup_failed", { code });
       }
     },
   };
@@ -162,21 +194,28 @@ export function createYouTubeProcess(url: string) {
   }
 
   const runtimeCookies = prepareRuntimeCookies();
+  let runtimeDirectory: RuntimeDirectory | undefined;
   let subprocess;
   try {
+    runtimeDirectory = prepareRuntimeDirectory();
     subprocess = youtubedl.exec(url, {
       ...commonFlags(runtimeCookies.file),
       output: "-",
       format: "bestaudio/best",
       noPlaylist: true,
       quiet: true,
-    });
+    }, { cwd: runtimeDirectory.path });
   } catch (error) {
     runtimeCookies.cleanup();
+    runtimeDirectory?.cleanup();
     throw error;
   }
-  subprocess.once("close", runtimeCookies.cleanup);
-  subprocess.once("error", runtimeCookies.cleanup);
+  const cleanup = () => {
+    runtimeCookies.cleanup();
+    runtimeDirectory?.cleanup();
+  };
+  subprocess.once("close", cleanup);
+  subprocess.once("error", cleanup);
   logger.info("youtube.stream.spawned", {
     videoId: new URL(url).searchParams.get("v") ?? new URL(url).pathname.slice(1),
     pid: subprocess.pid,
