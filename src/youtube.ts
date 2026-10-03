@@ -117,6 +117,9 @@ function commonFlags(cookiesFile?: string) {
   return {
     noWarnings: true,
     jsRuntimes: "node" as const,
+    // mweb can expose playable formats when age-restricted web_creator
+    // responses only contain SABR formats. Keep the default clients as well.
+    ...(cookiesFile ? { extractorArgs: "youtube:player_client=mweb,default" } : {}),
     ...(cookiesFile ? { cookies: cookiesFile } : {}),
   };
 }
